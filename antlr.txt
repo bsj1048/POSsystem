@@ -1,0 +1,22 @@
+declaration -> <decl spec>  <init_decl_list>
+
+init decl_list -> init_decl , init_decl, init_decl
+
+init_declarator -> dclarator     |    dclarator = 4
+
+declarator -> a    |    a[100]
+
+
+
+
+
+
+
+var_decl : decl_spec decl_list ';'
+
+decl_list : TEMP ( ',' TEMP )* ;
+
+TEMP : IDENT 
+		|  IDENT '=' LITERAL ';'
+		|  IDENT '[' LITERAL ']' ;
+

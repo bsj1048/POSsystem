@@ -1,0 +1,124 @@
+
+<!-- 결제 내역 화면 -->
+<div class="topMargin"></div>
+<div class="row" >
+    <table class="table table-hover table-bordered">
+        <thead>
+            <tr>
+                <th class="col-md-2 text-center">결제일</th>
+                <th class="col-md-2 text-center">테이블</th>
+                <th class="col-md-4 text-center">상품</th>
+                <th class="col-md-2 text-center">금액</th>
+                <th colspan="2" class="col-md-2 text-center">결제 방법</th>
+            </tr>
+        </thead>
+        <!-- 결제 내역을 append 하기 위한 tbody -->
+        <tbody id="paymentList">
+            
+        </tbody>
+
+    </table>
+</div>
+
+<!-- 결제 취소를 위한 팝업창/ 취소 버튼 클릭시 활성화 -->
+<div class="modal fade" id="paymentDetailModal" role="dialog">
+    <div class="modal-dialog">
+        <!-- Modal content-->
+        <div class="modal-content" style="width:400px">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">결제 취소</h4>
+            </div>
+            <div class="modal-body">
+                <div class="tab-content">
+                    <div class="form-group">
+                        <label for="cardnumber">카드 번호</label>
+                        <input type="text" class="form-control" id="cardnumber" placeholder="카드 번호를 입력하세요.." name="cardnumber">
+                    </div>
+                    
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="paycancelBtn" >결제 취소</button>
+            </div>
+        </div>
+    </div>
+</div>
+       
+
+<!-- restServer의 getPaymentDetail을 호출하여 결제 내역이 구성되는 두 DB 테이블을 JOIN하여 가져와서 출력 -->
+<script>
+    $.ajax({
+        url:"/getPaymentDetail"
+    })
+    .done(function(data){
+        console.log(data)
+        for(var i in data){
+            $("#paymentList").append(
+                "<tr id='"+data[i].id+"'>"+
+                    "<td>"+data[i].paydate+"</td>"+
+                    "<td>"+data[i].idtable+"</td>"+
+                    "<td>"+data[i].product+"</td>"+
+                    "<td>"+data[i].total+"</td>"+
+                    "<td class='paymentoption'>"+data[i].paymentoption+"</td>"+
+                    "<td>"+
+                        "<button class='btn btn-sm btn-default btn-cancel'>취소</button>"+
+                        "<input type='hidden' value='"+data[i].cardnum+"'>"+
+                    "</td>"+
+                "</tr>"
+            );
+        }
+
+        
+    })
+    // 현금, 카드에 대한 취소 작업 처리 (미-구현)
+    .done(function(){
+        $(".btn-cancel").click(function(){
+            var paymentid = $(this).parents("tr").attr("id");
+            var paymentoption = $(this).parent().siblings("td.paymentoption").text();
+            var oldCardNum = $(this).siblings().val();
+            console.log(typeof(paymentid))
+            console.log(typeof(paymentoption))
+            console.log(typeof(oldCardNum))
+            if(paymentoption === "현금"){
+                // console.log(typeof(oldCardNum));
+                if(oldCardNum === "0"){
+                    
+                    $.ajax({
+                        url:"/deletePaymentAll",
+                        data:{"paymentid":paymentid}
+                    })
+                    .done(function(response){
+                        // console.log(response);
+                        console.log(response)
+                        if(response === "success"){
+                            swal("", "현금 결제가 취소되었습니다.", "success");
+                        }
+                        
+                    });
+                }
+                else{
+                    $("#paymentDetailModal").modal('show');
+                }
+            }
+            else{
+                // 카드 결제
+                $("#paymentDetailModal").modal('show');
+    
+            }
+            var cardnumver = $("#cardnumber").val();
+    
+            $("#paycancelBtn").click(function(){
+                
+                if($("#cardnumber").val() == oldCardNum) {
+                    // 삭제해
+                }
+                else{
+                    swal("", "카드 번호가 일치하지 않습니다.", "warning");
+                }
+        
+            });
+        })
+    })
+
+</script>

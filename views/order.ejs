@@ -1,0 +1,462 @@
+<!-- 주문 화면 start -->
+<div class="container">
+    <div class="topMargin"></div>
+    <div class="row">
+        <input type="hidden" id="tableid" value="<%=idtable%>">
+            <!--  
+                main.ejs의 clickTable method 참고
+                주문화면을 호출한 테이블이 무엇인지 알기위해 테이블 id를 받는다
+            -->
+            <!-- 주문 내역 부분 -->
+        <div class="col-md-4">
+            <table class="table talbe-bordered">
+                <thead>
+                    <tr>
+                        <th>상품명</th>
+                        <th>수량</th>
+                        <th>가격</th>
+                    </tr>
+                </thead>
+                <!-- DB에서 주문 내역이 존재하면 id를 이용하여 tbody의 자식으로 append -->
+                <tbody id="orderbody">
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td>
+                            <button class="btn btn-success" id="plusProductBtn">+</button>
+                            <button class="btn btn-warning" id="minusProductBtn">-</button>
+                        </td>
+                        <td colspan="2" id="totalPrice" > 0 </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="col-md-8">
+                <!-- DB에서 상품 목록이 존재하면 id를 이용하여 table 형식의 div append -->
+            <div class="row" id="productList">
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                </div>
+                <div class="col-md-8 ">
+                    <button class="btn btn-info" id = "orderBtn">주문</button>
+                    <button class="btn btn-info" id = "paymentBtn">결제</button>
+                    <button class="btn btn-info" id = "cancleBtn">주문취소</button>
+                </div>
+            </div>
+        </div>
+    </div>        
+    <!-- Modal w3cschool 참조 -->
+    <div class="modal fade" id="paymentModal" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content" style="width:400px">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">결제</h4>
+                </div>
+                <div class="modal-body">
+                    <!-- 현금과 카드로 toggle 되어지는 탭 메뉴 -->
+                    <ul class="nav nav-tabs" id="myTab">
+                        <li class="active"><a data-target="#cash" data-toggle="tab">현금</a></li>
+                        <li><a data-target="#card" data-toggle="tab">카드</a></li>
+                    </ul>
+                    <!-- 결제할 때 필요한 정보를 입력받기 위한 form 양식 -->
+                    <div class="tab-content">
+                        <!-- 탭 콘텐츠로 위의 data-target이 cash이면 cash, card이면 card 화면을 표시 -->
+                        <div class="tab-pane active" id="cash">
+                            <div class="form-group">
+                                <label for="name">받은 금액</label>
+                                <input type="text" class="form-control" id="wishcash" onkeyup="checkMoney()" value="0" placeholder="금액을 입력하세요.." name="wishcash">
+                            </div>
+                            <div class="form-group">
+                                <label for="name">현금영수증 번호</label>
+                                <input type="text" class="form-control" id="cashcardnumber" placeholder="번호를 입력하세요.." name="cashcardnumber">
+                            </div>
+                            <div class="form-group">
+                                <label for="name">거스름돈</label>
+                                <input type="text" class="form-control" id="change" value="0" name="change" disabled >
+                            </div>
+                        </div>
+                        <div class="tab-pane" id="card">
+                            <div class="form-group">
+                                <label for="name">받은 금액</label>
+                                <input type="text" class="form-control" id="wishcashbycard" placeholder="금액을 입력하세요.." name="wishcash" disabled="disabled">
+                            </div>
+                            <div class="form-group">
+                                <label for="name">카드 번호</label>
+                                <input type="text" class="form-control" id="cardnumber" placeholder="번호를 입력하세요.." name="cardnumber">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>남은 총액 : <span id="paytotal">1</span></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" id="payBtn" data-dismiss="modal">결제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+       
+
+
+<script>
+
+    var productName;
+    var productPrice;
+   
+    // console.log($("#tableid").val())
+    // 테이블 id값 들어오는지 확인
+    
+
+    // ajax를 이용하여 DB에서 테이블 번호에 따라 주문 내역을 가져오는 부분
+    // restServer에 함수가 존재
+    $.ajax({
+        url:"/getOrderbyTable",
+        data:{"tableid":$("#tableid").val()}
+    })
+    .done(function(data){ // restServer의 작업이 종료되면 data라는 변수로 응답을 받는다
+        var total = 0;
+        // 주문 내역과 총액 처리
+        for(var i = 0; i < data.length; i++){
+            $("#orderbody").append(
+                "<tr>" +
+                    "<td class='productname'>"+data[i].pname+"</td>" +
+                    "<td class='productcount'>"+data[i].pcount+"</td>" +
+                    "<td class='productprice'>"+data[i].pprice+"</td>" +
+                "</tr>"
+            )
+
+        total += data[i].pprice;
+        $("#totalPrice").text(total);
+        $("#paytotal").text(total);
+
+        }
+    })
+
+        // 메뉴리스트 가져오기
+        // 위와 비슷한 방식으로 진행됨
+        $.ajax({
+        url:"/getProduct"
+    }).done(function(data){
+        console.log(data);
+        for(var i=0;i <data.length; i++){
+            
+            $("#productList").append(
+                '<div class="col-md-3 productDiv">'+
+                    '<p class="tableInfo">'+data[i].name+'</p>'+
+                ' </div>'
+            )
+        }
+        /* 
+            producDiv라는 클래스를 모든 상품 목록이 가지고 있는데 이 클래스는 가지고 있는 
+            즉, 상품 목록들 중 active라는 클래스를 가진 목록에서 
+            $(".productDiv").removeClass("active"); 에 의해 active를 제거한 뒤,
+            현재 클릭된 상품에 대해서만 active클래스를 추가시켜 active 효과를 받게 한다
+            active는 .css 에서 나오겠지만, 메뉴가 클릭되면 클릭된 상태를 유지하기 위해 사용된다
+        */
+        $(".productDiv").click(function(){
+            $(".productDiv").removeClass("active");
+            $(this).addClass("active");
+            
+            // active를 가지고 있다면 상품의 이름으로 상품가격을 전역변수 productPrice로 넘겨준다.
+            if($(".productDiv").hasClass("active")){
+                productName = $(this).children().html();
+
+                for(var j=0;j<data.length;j++){
+                    if(data[j].name === productName){
+                        productPrice = data[j].price
+                    }
+                }
+            }
+        })
+    })
+
+
+    // 결제 화면에서 form 양식의 input 변화에 따라 실시간으로 남은 총액을 계산해주기 위한 함수
+    function checkMoney(){
+        
+        // *1 같은 것은 시간이 없는 관계로 parseInt() 등 여러 방법을 이용하여 숫자로 변환하려 했지만 실패할 경우
+        // *1 같은 수식으로 숫자로 변환이 가능하여 일시적으로 사용한 부분
+        var getMoney = $("#wishcash").val()*1;
+        var totalMoney = $("#paytotal").text()*1;
+        var change = $("#change").val()*1;
+        var fixedTotalMoney = $("#totalPrice").text();
+
+        // 받는 돈이 총액보다 크면 결제화면에서 보이는 총액을 0, 카드결제 버튼의 동작을 막는다
+        if(getMoney >= fixedTotalMoney){
+           $("#change").val(getMoney-fixedTotalMoney);
+           $("#paytotal").text(0);
+           $("#myTab li:last-child").css("display","none");
+        }
+        // 작을 경우 남은 총액을 계산하고 남은 총액에 대한 부분은 카드 결제의 금액으로 자동 지정된다
+        else if(getMoney < fixedTotalMoney){
+           $("#change").val(0);
+           $("#paytotal").text(fixedTotalMoney-getMoney);
+           $("#wishcashbycard").val(fixedTotalMoney-getMoney);
+           $("#myTab li:last-child").css("display","");
+        }
+    }
+
+    // 주문 내역 파트에 [+]버튼에 대한 부분
+    $("#plusProductBtn").click(function(){
+        
+        if(!$(".productDiv").hasClass("active")){
+            return;
+        }
+        // 클릭된 상품과 일치하는 이름을 가진 상품을 주문 내역에서 찾아 존재하면 그 것을 반환한다
+        var $temp = $("#orderbody td.productname").filter(function(){
+            return $(this).text() === productName
+        });
+        // 반환값을 old라고 명명하고 수량과 가격 정보 역시 저장한다
+        // 이렇게 지역 변수로 생성하지 않으면 여러 상품 목록이 서로 연관되어 엉망이 되어 버린다
+        var old = $temp;
+        var oldCount = parseInt($temp.siblings( ".productcount" ).text());
+        var oldTotal = parseInt($("#totalPrice").text());
+
+        // [+]클릭에 대한 결과 처리
+        $temp.siblings( ".productcount" ).text(++oldCount);
+        $temp.siblings( ".productprice" ).text(productPrice*oldCount);
+        
+        // 처음 상품을 등록하는 경우
+        if(old.text() !== productName){
+            var count=0;
+            // append로 추가
+            $("#orderbody").append(
+                "<tr>"+
+                    "<td class='productname'>"+productName+"</td>"+
+                    "<td class='productcount'>"+count+"</td>"+
+                    "<td class='productprice'>"+(productPrice*count)+"</td>"+
+                "</tr>"
+            )
+
+        }else{
+            var result= oldTotal+productPrice;
+
+            $("#totalPrice").text(result.toString());
+            $("#paytotal").text(result.toString());
+        }
+    })
+
+    // 주문 내역 파트에 [-]버튼에 대한 부분
+    $("#minusProductBtn").click(function(){
+
+        if(!$(".productDiv").hasClass("active")){
+            return;
+        }
+        var $temp = $("#orderbody td.productname").filter(function(){
+            return $(this).text() === productName
+        });
+        var old = $temp;
+        var oldCount = parseInt($temp.siblings( ".productcount" ).text());
+        var oldTotal = parseInt($("#totalPrice").text());
+
+        if(oldCount !== 0){
+            $temp.siblings( ".productcount" ).text(--oldCount);
+            $temp.siblings( ".productprice" ).text(productPrice*oldCount);
+
+            if(old.text() !== productName){
+            var count=0;
+           
+            $("#orderbody").append(
+                "<tr>"+
+                    "<td class='productname'>"+productName+"</td>"+
+                    "<td class='productcount'>"+count+"</td>"+
+                    "<td class='productprice'>"+(productPrice*count)+"</td>"+
+                "</tr>"
+            )
+
+        }else{
+
+                var result= oldTotal-productPrice;
+
+                $("#totalPrice").text(result.toString());
+                $("#paytotal").text(result.toString());
+        }
+        // 현재 상품명 수량 가격의 부분이 $temp이기 때문에 <tr> 제거를 위해 parent() 호출
+        }else{
+            $temp.parent().remove();
+            return;
+        }
+    })
+
+    // 주문 버튼 클릭시
+    $("#orderBtn").click(function(){
+        // 테이블 번호에 따라 관련된 모든 DB 데이터를 지운다
+        $.ajax({
+            url:"/deleteOrderbyTable",
+            data:{"tableid":$("#tableid").val()}
+        })
+        .done(function(response){
+            
+            for(var i = 0; i < $("#orderbody > tr").length; i++){
+                $.ajax({
+                    url:"/insertOrderbyTable",
+                    data:{"tableid":$("#tableid").val(),
+                    "pname":$("#orderbody > tr:nth-child("+(i+1)+") > td.productname").text(),
+                    "pcount":$("#orderbody > tr:nth-child("+(i+1)+") > td.productcount").text(),
+                    "pprice":$("#orderbody > tr:nth-child("+(i+1)+") > td.productprice").text(),
+                    }
+                })
+                .done(function(response){
+                    swal("", "주문 성공!.", "success");
+                })
+            }
+            $("#mainContainer").load("/business");
+        })
+        console.log($("#orderbody > tr").length);
+
+    });
+
+    $("#paymentBtn").click(function(){
+        // $("#paymentModal").modal({backdrop: "static", keyboard: false}); 다른 곳 눌러서 끄지 못하도록 하기
+        $("#paymentModal").modal('show')
+        console.log($("#wishcash").val());
+        console.log($("#paytotal").text());
+        $("#wishcashbycard").val(parseInt($("#wishcash").val()) + parseInt($("#paytotal").text()));
+        $("#paytotal").text(parseInt($("#wishcash").val()) + parseInt($("#paytotal").text()));
+        $("#wishcash").val(0);
+    })
+
+    $("#payBtn").click(function(){
+        console.log("눌려짐");
+        // 주문이 모두 현금인 경우
+        // 디비가 성공한 경우
+        if( $("#wishcash").val() >= $("#paytotal").text()){
+            // 결제내역 insert하고 종료한다
+            var cardnum = $("#cashcardnumber").val();
+            var dt = new Date();
+            var month = dt.getMonth()+1;
+            var day = dt.getDate();
+            var year = dt.getFullYear();
+            var paydate = year +'-'+ month + '-' + day;
+            var productName;
+            var productCount;
+            // 현금으로 계산된 결제 내역을 DB에 넣는다
+            $.ajax({
+                url:"/insertPayment",
+                data:{ paydate:paydate,idtable:$("#tableid").val(),paymentoption:"현금",cardnum:cardnum}
+            })
+            .done(function(response){
+                if(response === "success"){
+                    for(var i = 0; i < $("#orderbody > tr").length; i++){
+
+                        $.ajax({
+                            url:"/insertPaymentProduct",
+                            data:{
+                                product:$("#orderbody > tr:nth-child("+(i+1)+") > td.productname").text(),
+                                total:$("#orderbody > tr:nth-child("+(i+1)+") > td.productprice").text()*1,
+                                count:$("#orderbody > tr:nth-child("+(i+1)+") > td.productcount").text()*1,
+                            }
+                        })
+                        .done(function(response){
+                            if(response ==="success"){
+
+                                swal({
+                                    title: "",
+                                    text: "결제가 완료되었습니다.",
+                                    icon: "success"
+                                })
+                                .then(function(){
+                                    $.ajax({
+                                        url:"/deleteOrderbyTable",
+                                        data:{"tableid":$("#tableid").val()}
+                                    })
+                                    .done(function(response){
+                                        $("#mainContainer").load("/business");  
+                                    })
+                                })
+                            }
+                        })
+                    }
+                }
+            })
+            
+             
+        }
+        // 카드로 결제하는 경우 - 카드,현금 중 카드 결제가 포함되는 혼합결제는 카드로 결제 내역에 넣는다
+        else{
+            var cardnum = $("#cardnumber").val();
+            var dt = new Date();
+            var month = dt.getMonth()+1;
+            var day = dt.getDate();
+            var year = dt.getFullYear();
+            var paydate = year+'-'+month + '-' + day;
+            var productNameList = "";
+            var productCountList = "";
+
+            // 카드 번호를 입력하지 않은 경우 오류
+            if(cardnum ==""){
+                swal({
+                    title: "",
+                    text: "카드 번호를 입력해주세요.",
+                    icon: "warning"
+                })
+                .then(function(){
+                    $("#paymentModal").modal('show');
+                    return;
+                })
+            }
+            else{
+
+                // 카드 결제 내역을 DB에 넣는다
+                $.ajax({
+                url:"/insertPayment",
+                data:{ paydate:paydate,idtable:$("#tableid").val(),paymentoption:"카드",cardnum:cardnum}
+                })
+                .done(function(response){
+                    if(response === "success"){
+                        for(var i = 0; i < $("#orderbody > tr").length; i++){
+
+                            $.ajax({
+                                url:"/insertPaymentProduct",
+                                data:{
+                                    product:$("#orderbody > tr:nth-child("+(i+1)+") > td.productname").text(),
+                                    total:$("#orderbody > tr:nth-child("+(i+1)+") > td.productprice").text()*1,
+                                    count:$("#orderbody > tr:nth-child("+(i+1)+") > td.productcount").text()*1,
+                                }
+                            })
+                            .done(function(response){
+                                if(response ==="success"){
+
+                                    swal({
+                                        title: "",
+                                        text: "결제가 완료되었습니다.",
+                                        icon: "success"
+                                    })
+                                    .then(function(){
+                                        $.ajax({
+                                            url:"/deleteOrderbyTable",
+                                            data:{"tableid":$("#tableid").val()}
+                                        })
+                                        .done(function(response){
+                                            $("#mainContainer").load("/business");  
+                                        })
+                                    })
+                                }
+                            })
+                        }
+                    }
+                })
+
+            }
+        }
+    });
+
+    // 주문취소 버튼 클릭시
+    $("#cancleBtn").click(function(){
+        // DB내의 모든 테이블에 해당하는 주문 기록을 삭제한다
+        $.ajax({
+            url:"/deleteOrderbyTable",
+            data:{"tableid":$("#tableid").val()}
+        })
+        .done(function(response){
+            console.log(response);
+            if(response === "success"){
+                swal("", "주문이 취소되었습니다.", "success");
+            }
+            $("#mainContainer").load("/business");
+        })
+    });
+</script>

@@ -1,0 +1,67 @@
+
+<!-- 매출 관리 화면 -->
+<!-- 
+    결제 내역의 데이터를 이용하여 기간에 따른 매출 정보 출력 (미-구현)
+-->
+<div class="row">
+    <div class="topMargin"></div>
+    <table >
+        <thead>
+            <!-- datepicker/ jqueryUI의 기능을 이용해 기간을 보기좋은 달력으로 선택하여 입력 -->
+            <tr>
+                <th>기간</th>
+                <th><input type="text" id="datepicker"></th>
+                <th>  ~  </th>
+                <th><input type="text" id="datepicker2"></th>
+                <th><button class="btn btn-success">조회</button></th>
+            </tr>
+        </thead>
+    </table>
+    <table class="table table-hover table-bordered">
+        <thead>
+            <tr>
+                <th>상품명</th>
+                <th>판매 수량</th>
+                <th>합계</th>
+            </tr>
+        </thead>
+        <tbody id="saleslistbody">
+           
+        </tbody>
+        <tfoot>
+            <tr>
+                <td></td>
+                <td>총액</td>
+                <td id="totalSalesPrice"></td>
+            </tr>
+        </tfoot>
+
+    </table>
+</div>
+
+<script>
+    // 위는 datepicker의 공간을 할당한다면 script부분에서 화면에 적용
+     $('input#datepicker').datepicker();
+     
+     var totalprice=0;
+     // getSalesInfo을 호출해 매출 관리 정보 출력
+     // 현재 매출 관리 정보는 DB의 내용을 전부 긁어서 출력하는 정도의 구현
+     $.ajax({
+         url:"/getSalesInfo"
+     }).done(function(res){
+         console.log(res)
+         for(var i=0;i<res.length; i++){
+
+             $("#saleslistbody").append(
+                "<tr>"+
+                    "<td>"+res[i].product+"</td>"+
+                    "<td>"+res[i].totalcount+"</td>"+
+                    "<td>"+res[i].totalprice+"</td>"+
+                "</tr>"
+             )
+
+            totalprice += res[i].totalprice;
+         }
+         $("#totalSalesPrice").text(totalprice)
+     })
+</script>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+      <meta charset="utf-8">  
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="stylesheet" href="/css/bootstrap.min.css" />
+      <link rel="stylesheet" href="/css/style.css" type="text/css">
+      <script type="text/javascript" src="/js/jquery.min.js"></script>
+      <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+      <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+      <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+      <script type="text/javascript" src="/sweetalert/sweetalert.min.js"></script>
+  </head>
+<body>
+  <!-- main에서 바꿔줄 다른 .ejs들이 비춰질 div -->
+  <div class="container" id="mainContainer">
+    
+  </div>
+
+  <!-- main의 하단 메뉴 -->
+<div class="container">
+  <div class="row footerButton-group">
+    <div class="col-md-12" style="margin-left: 120px;">
+      <button class="btn btn-info btn-lg margin" id="businessBtn">영업</button>
+      <button class="btn btn-success btn-lg margin" id="paymentBtn">결제내역</button>
+      <button class="btn btn-warning btn-lg margin" id="salesBtn">매출관리</button>
+      <button class="btn btn-primary btn-lg margin" id="productBtn">상품관리</button>
+      <button class="btn btn-default btn-lg margin" id="exitBtn">종료</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+  $(document).ready( function() {
+    // 초기실행시 영업화면 출력
+    var $mainContainer = $("#mainContainer");
+    $mainContainer.load("/business");
+
+    // 영업 버튼 클릭시
+    $("#businessBtn").click(function(){ 
+      $mainContainer.load("/business");
+    })
+
+    // 결제내역 버튼 클릭시
+    $("#paymentBtn").click(function(){ 
+      $mainContainer.load("/paymentDetails");
+    })
+
+    // 매출관리 버튼 클릭시
+    $("#salesBtn").click(function(){ 
+      $mainContainer.load("/salesManagement");
+    })
+
+    // 상품관리 버튼 클릭시
+    $("#productBtn").click(function(){ 
+      $mainContainer.load("/productsManagement");
+    })
+
+
+    // 종료시 메인 화면 사라짐
+    $("#exitBtn").click(function(){
+      window.open("about:blank","_self").close();
+    });
+    
+  });
+
+  // 영업 화면에서 테이블 누를 때 실행하는 함수
+  function clickTable(table){
+    var $mainContainer = $("#mainContainer");
+    var tableid = $(table).attr("id");
+    var tableNum = parseInt(tableid.substr(5,7));
+    $mainContainer.load("/order?tableid="+tableNum);
+    /* main과 main에서 부분적으로 load한 .ejs는 연동되므로  
+      <div class="col-md-2 tableDiv" id="table1" onclick="clickTable(this)">
+        <p class="tableInfo">테이블 1</p> 
+      </div>  
+      위 포맷의 id "table" + n 에서 n을 때내어 GET방식으로 order.ejs에 전달
+      후에 order.ejs에서 주문 화면을 연 테이블이 어떤 테이블인지 구분할 때 사용
+    */
+  }
+
+
+</script>
+</body>
+</html>
